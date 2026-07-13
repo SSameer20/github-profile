@@ -20,6 +20,15 @@ type ConnectedUser = {
   email?: string | null;
 };
 
+type KeyValue = {
+  label: string;
+  value: string;
+};
+
+type PreviewSection =
+  | { title: string; kind: 'kv'; items: KeyValue[] }
+  | { title: string; kind: 'list'; items: string[] };
+
 const defaultAscii = String.raw`
       .-""""-.
      / -   -  \
@@ -47,6 +56,12 @@ async function fetchAsciiFromImage(file: File) {
   const text = file.name.replace(/\.[^.]+$/, '').slice(0, 18) || 'avatar';
   const glyphs = ['@', '#', '%', '*', '+', '=', '-', ':', '.', ' '];
   return Array.from(text.padEnd(60, ' '), (char, index) => glyphs[(char.charCodeAt(0) + index) % glyphs.length]).join('');
+}
+
+function dotLine(label: string, value: string) {
+  const maxLabelWidth = 16;
+  const dots = Math.max(2, maxLabelWidth - label.length);
+  return `${label}${'.'.repeat(dots)} ${value}`;
 }
 
 export default function Page() {
@@ -128,13 +143,58 @@ export default function Page() {
   }, [sessionToken]);
 
   const preview = useMemo(() => {
+    const sections: PreviewSection[] = [
+      {
+        title: 'System',
+        kind: 'kv',
+        items: [
+          { label: 'OS', value: 'Linux' },
+          { label: 'Kernel', value: '6.12' },
+          { label: 'Shell', value: 'zsh' },
+          { label: 'Terminal', value: 'Ghostty' },
+          { label: 'Editor', value: 'Cursor' },
+          { label: 'IDE', value: 'VSCode' }
+        ]
+      },
+      { title: 'Languages', kind: 'list', items: ['TypeScript', 'JavaScript', 'Python', 'Go', 'Rust'] },
+      { title: 'Frameworks', kind: 'list', items: ['React', 'Next.js', 'Express', 'FastAPI'] },
+      { title: 'Infrastructure', kind: 'list', items: ['Docker', 'Kubernetes', 'AWS', 'GCP', 'Terraform'] },
+      { title: 'AI Stack', kind: 'list', items: ['OpenAI', 'Claude', 'Gemini', 'MCP', 'LangGraph'] },
+      {
+        title: 'GitHub',
+        kind: 'kv',
+        items: [
+          { label: 'Repositories', value: '128' },
+          { label: 'Stars', value: '4.8k' },
+          { label: 'Followers', value: '1.2k' },
+          { label: 'Following', value: '42' },
+          { label: 'Contributions', value: '1,843' },
+          { label: 'Commits', value: '9,812' },
+          { label: 'Pull Requests', value: '214' },
+          { label: 'Issues', value: '87' },
+          { label: 'Top Languages', value: 'TypeScript, Go, Rust' }
+        ]
+      },
+      {
+        title: 'Contact',
+        kind: 'kv',
+        items: [
+          { label: 'Email', value: 'sameer@example.com' },
+          { label: 'Website', value: 'sameer.dev' },
+          { label: 'LinkedIn', value: 'linkedin.com/in/sameer' },
+          { label: 'Twitter', value: '@sameer' }
+        ]
+      }
+    ];
+
     return {
       username: profile.identifier.toLowerCase().replace(/\s+/g, ''),
       os: 'Windows 11 / macOS / Linux',
       role: profile.classification,
       kernel: profile.coreKernel,
       uptime: '12 years, 4 months, 12 days',
-      bio: profile.profileAbstract
+      bio: profile.profileAbstract,
+      sections
     };
   }, [profile]);
 
@@ -229,7 +289,7 @@ export default function Page() {
           </div>
         </header>
 
-        <section className="panel">
+        <section className="panel editor-panel">
           <div className="panel-header">
             <span>Metadata Editor</span>
             <div className="lights" aria-hidden="true">
@@ -302,44 +362,70 @@ export default function Page() {
           </div>
         </section>
 
-        <section className="split">
-          <section className="panel">
-            <div className="panel-header">
-              <span>Real-Time Preview</span>
-              <span className="eyebrow">Render Output</span>
+        <section className="panel terminal-panel">
+          <div className="panel-header">
+            <span>Real-Time Preview</span>
+            <span className="eyebrow">fastfetch</span>
+          </div>
+          <div className="terminal-window">
+            <div className="terminal-title">
+              <span>sameer@terminal</span>
+              <span>────────────────────────────</span>
+              <span>$ fastfetch</span>
             </div>
-            <div className="preview">
-              <div className="terminal-card">
-                <div className="terminal-top">
-                  <div className="ascii-box">{profile.asciiAvatar || defaultAscii}</div>
-                  <div className="meta-grid">
-                    <div className="name">{preview.username}</div>
-                    <div className="label">OS</div>
-                    <div>{preview.os}</div>
-                    <div className="label">Role</div>
-                    <div>{preview.role}</div>
-                    <div className="label">Kernel</div>
-                    <div>{preview.kernel}</div>
-                    <div className="label">Uptime</div>
-                    <div>{preview.uptime}</div>
-                  </div>
-                </div>
-                <div className="bio">
-                  <div className="label">Bio Segment</div>
-                  <p>{preview.bio}</p>
-                </div>
+
+            <div className="terminal-grid">
+              <div className="portrait-block">
+                <div className="ascii-box portrait">{profile.asciiAvatar || defaultAscii}</div>
+                <div className="terminal-name">{preview.username}</div>
+              </div>
+
+              <div className="terminal-content">
+                {preview.sections.map((section) => (
+                  <section className="terminal-section" key={section.title}>
+                    <div className="section-rule">────────────────────────────</div>
+                    <div className="section-title">{section.title}</div>
+                    <div className="section-rule">────────────────────────────</div>
+
+                    {section.kind === 'kv' ? (
+                      <div className="kv-list">
+                        {section.items.map((item) => (
+                          <div className="kv-line" key={`${section.title}-${item.label}`}>
+                            <span className="kv-label">{item.label}</span>
+                            <span className="kv-value">{item.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="tag-list">
+                        {section.items.map((item) => (
+                          <span key={`${section.title}-${item}`}>{item}</span>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                ))}
+
+                <section className="terminal-section">
+                  <div className="section-rule">────────────────────────────</div>
+                  <div className="section-title">About</div>
+                  <div className="section-rule">────────────────────────────</div>
+                  <p className="about-text">{preview.bio}</p>
+                </section>
+
+                <section className="terminal-section">
+                  <div className="section-rule">────────────────────────────</div>
+                  <div className="section-title">Session Log</div>
+                  <div className="section-rule">────────────────────────────</div>
+                  <ul className="session-log">
+                    {sessionLog.map((entry, index) => (
+                      <li key={`${entry}-${index}`}>✓ {entry}</li>
+                    ))}
+                  </ul>
+                </section>
               </div>
             </div>
-          </section>
-
-          <section className="session-log">
-            <h3>Session Log</h3>
-            <ul>
-              {sessionLog.map((entry, index) => (
-                <li key={`${entry}-${index}`}>{entry}</li>
-              ))}
-            </ul>
-          </section>
+          </div>
         </section>
       </div>
     </main>
