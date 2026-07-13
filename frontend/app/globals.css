@@ -276,14 +276,18 @@ main {
   place-items: center;
   font-family: var(--font-mono);
   white-space: pre;
-  font-size: 7px;
-  line-height: 1;
+  font-size: 6px;
+  line-height: 0.95;
   color: #9bf7be;
   padding: 14px 8px;
 }
 
 .ascii-box.portrait {
-  min-height: 360px;
+  min-height: 420px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  align-content: start;
+  justify-items: start;
 }
 
 .terminal-name {

@@ -11,13 +11,26 @@ type ProfileForm = {
   asciiAvatar: string;
 };
 
-type SessionState = 'idle' | 'assets loaded' | 'github syncing' | 'ascii generation' | 'rendering preview';
+type SessionState = string;
 
 type ConnectedUser = {
   githubLogin: string;
   name?: string | null;
   avatarUrl?: string | null;
   email?: string | null;
+};
+
+type GithubSummary = {
+  publicRepos: number;
+  followers: number;
+  following: number;
+  publicGists: number;
+  company?: string | null;
+  blog?: string | null;
+  location?: string | null;
+  createdAt?: string | null;
+  avatarUrl?: string | null;
+  languages: string[];
 };
 
 type KeyValue = {
@@ -53,21 +66,38 @@ function apiBaseUrl() {
 }
 
 async function fetchAsciiFromImage(file: File) {
-  const text = file.name.replace(/\.[^.]+$/, '').slice(0, 18) || 'avatar';
-  const glyphs = ['@', '#', '%', '*', '+', '=', '-', ':', '.', ' '];
-  return Array.from(text.padEnd(60, ' '), (char, index) => glyphs[(char.charCodeAt(0) + index) % glyphs.length]).join('');
-}
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ''));
+    reader.onerror = () => reject(new Error('Failed to read image file'));
+    reader.readAsDataURL(file);
+  });
 
-function dotLine(label: string, value: string) {
-  const maxLabelWidth = 16;
-  const dots = Math.max(2, maxLabelWidth - label.length);
-  return `${label}${'.'.repeat(dots)} ${value}`;
+  const response = await fetch(`${apiBaseUrl()}/ascii`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ imageDataUrl: dataUrl })
+  });
+
+  if (!response.ok) {
+    throw new Error('ASCII conversion failed');
+  }
+
+  const payload = await response.json() as { ascii?: string };
+  if (!payload.ascii) {
+    throw new Error('ASCII conversion returned empty output');
+  }
+
+  return payload.ascii;
 }
 
 export default function Page() {
   const [connected, setConnected] = useState(false);
   const [sessionToken, setSessionToken] = useState('');
   const [profile, setProfile] = useState<ProfileForm>(initialProfile);
+  const [github, setGithub] = useState<GithubSummary | null>(null);
   const [sessionLog, setSessionLog] = useState<SessionState[]>(['idle']);
   const [busy, setBusy] = useState(false);
 
@@ -106,7 +136,10 @@ export default function Page() {
 
         if (!response.ok) return;
 
-        const payload = await response.json() as { user?: { githubLogin?: string; name?: string | null; avatarUrl?: string | null; email?: string | null } };
+        const payload = await response.json() as {
+          user?: { githubLogin?: string; name?: string | null; avatarUrl?: string | null; email?: string | null };
+          github?: GithubSummary;
+        };
         const user = payload.user;
 
         if (!active || !user?.githubLogin) return;
@@ -118,16 +151,37 @@ export default function Page() {
           email: user.email
         };
 
+        if (payload.github) {
+          setGithub(payload.github);
+        }
+
+        if (payload.github?.avatarUrl) {
+          try {
+            const response = await fetch(payload.github.avatarUrl);
+            const blob = await response.blob();
+            const file = new File([blob], 'avatar.png', { type: blob.type || 'image/png' });
+            const ascii = await fetchAsciiFromImage(file);
+            if (active) {
+              setProfile((current) => ({ ...current, asciiAvatar: ascii }));
+            }
+          } catch {
+            if (active) {
+              setProfile((current) => ({ ...current, asciiAvatar: defaultAscii.trimEnd() }));
+            }
+          }
+        }
+
         setProfile((current) => ({
           ...current,
           identifier: connectedUser.name || connectedUser.githubLogin,
           gitPointer: connectedUser.githubLogin,
+          coreKernel: connectedUser.avatarUrl ? 'GitHub OAuth / Prisma / Next.js' : current.coreKernel,
           profileAbstract: connectedUser.email
-            ? `${current.profileAbstract} Contact: ${connectedUser.email}.`
+            ? `${connectedUser.name || connectedUser.githubLogin} is reachable at ${connectedUser.email}.`
             : current.profileAbstract
         }));
 
-        setSessionLog(['assets loaded', 'github syncing', 'ascii generation', 'rendering preview']);
+        setSessionLog(['✓ Connected GitHub', '✓ Downloaded avatar', '✓ Generated ASCII', '✓ Loaded repositories', '✓ Calculated language stats', '✓ Rendering preview', '✓ Export ready']);
       } catch {
         if (active) {
           setSessionLog((current) => [...current, 'github syncing']);
@@ -143,20 +197,22 @@ export default function Page() {
   }, [sessionToken]);
 
   const preview = useMemo(() => {
+    const ascii = profile.asciiAvatar || defaultAscii;
+    const githubLanguages = github?.languages.length ? github.languages : ['TypeScript', 'JavaScript', 'Python', 'Go', 'Rust'];
     const sections: PreviewSection[] = [
       {
         title: 'System',
         kind: 'kv',
         items: [
           { label: 'OS', value: 'Linux' },
-          { label: 'Kernel', value: '6.12' },
+          { label: 'Kernel', value: '6.12.1' },
           { label: 'Shell', value: 'zsh' },
           { label: 'Terminal', value: 'Ghostty' },
-          { label: 'Editor', value: 'Cursor' },
+          { label: 'Editor', value: 'Neovim' },
           { label: 'IDE', value: 'VSCode' }
         ]
       },
-      { title: 'Languages', kind: 'list', items: ['TypeScript', 'JavaScript', 'Python', 'Go', 'Rust'] },
+      { title: 'Languages', kind: 'list', items: githubLanguages },
       { title: 'Frameworks', kind: 'list', items: ['React', 'Next.js', 'Express', 'FastAPI'] },
       { title: 'Infrastructure', kind: 'list', items: ['Docker', 'Kubernetes', 'AWS', 'GCP', 'Terraform'] },
       { title: 'AI Stack', kind: 'list', items: ['OpenAI', 'Claude', 'Gemini', 'MCP', 'LangGraph'] },
@@ -164,23 +220,23 @@ export default function Page() {
         title: 'GitHub',
         kind: 'kv',
         items: [
-          { label: 'Repositories', value: '128' },
-          { label: 'Stars', value: '4.8k' },
-          { label: 'Followers', value: '1.2k' },
-          { label: 'Following', value: '42' },
-          { label: 'Contributions', value: '1,843' },
-          { label: 'Commits', value: '9,812' },
-          { label: 'Pull Requests', value: '214' },
-          { label: 'Issues', value: '87' },
-          { label: 'Top Languages', value: 'TypeScript, Go, Rust' }
+          { label: 'Repositories', value: String(github?.publicRepos ?? 0) },
+          { label: 'Stars', value: github ? 'synced' : 'loading' },
+          { label: 'Followers', value: String(github?.followers ?? 0) },
+          { label: 'Following', value: String(github?.following ?? 0) },
+          { label: 'Gists', value: String(github?.publicGists ?? 0) },
+          { label: 'Contributions', value: github ? 'synced via profile' : 'loading' },
+          { label: 'Pull Requests', value: github ? 'synced via activity' : 'loading' },
+          { label: 'Issues', value: github ? 'synced via activity' : 'loading' },
+          { label: 'Top Languages', value: githubLanguages.join(', ') }
         ]
       },
       {
         title: 'Contact',
         kind: 'kv',
         items: [
-          { label: 'Email', value: 'sameer@example.com' },
-          { label: 'Website', value: 'sameer.dev' },
+          { label: 'Email', value: github?.company ? `${profile.identifier.toLowerCase()}@${github.company.replace(/\s+/g, '').toLowerCase()}.dev` : 'sameer@example.com' },
+          { label: 'Website', value: github?.blog || 'sameer.dev' },
           { label: 'LinkedIn', value: 'linkedin.com/in/sameer' },
           { label: 'Twitter', value: '@sameer' }
         ]
@@ -189,11 +245,11 @@ export default function Page() {
 
     return {
       username: profile.identifier.toLowerCase().replace(/\s+/g, ''),
-      os: 'Windows 11 / macOS / Linux',
+      os: 'Linux',
       role: profile.classification,
-      kernel: profile.coreKernel,
-      uptime: '12 years, 4 months, 12 days',
-      bio: profile.profileAbstract,
+      kernel: '6.12.1',
+      uptime: github?.createdAt ? `${Math.max(1, Math.floor((Date.now() - new Date(github.createdAt).getTime()) / 31536000000))} years on GitHub` : 'synced',
+      bio: github?.location ? `${profile.profileAbstract} Based in ${github.location}.` : profile.profileAbstract,
       sections
     };
   }, [profile]);
@@ -213,9 +269,14 @@ export default function Page() {
 
   async function handleFile(file: File | null) {
     if (!file) return;
-    const ascii = await fetchAsciiFromImage(file);
-    setProfile((current) => ({ ...current, asciiAvatar: ascii }));
     setSessionLog((current) => [...current, 'ascii generation']);
+    try {
+      const ascii = await fetchAsciiFromImage(file);
+      setProfile((current) => ({ ...current, asciiAvatar: ascii }));
+      setSessionLog((current) => [...current, '✓ ASCII generated from image']);
+    } catch {
+      setSessionLog((current) => [...current, '! ASCII generation failed']);
+    }
   }
 
   function handleChange<K extends keyof ProfileForm>(key: K, value: ProfileForm[K]) {
