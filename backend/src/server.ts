@@ -143,11 +143,8 @@ app.get('/auth/github/callback', async (req, res) => {
     { expiresIn: '7d' }
   );
 
-  res.json({
-    user,
-    sessionToken,
-    redirectUrl: `${config.frontendUrl}/?token=${encodeURIComponent(sessionToken)}`
-  });
+  const redirectUrl = `${config.frontendUrl}/?token=${encodeURIComponent(sessionToken)}`;
+  res.redirect(302, redirectUrl);
 });
 
 app.get('/me', async (req, res) => {

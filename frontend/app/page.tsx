@@ -65,6 +65,9 @@ export default function Page() {
       setConnected(true);
       setSessionToken(token);
       window.localStorage.setItem('sessionToken', token);
+      if (tokenFromUrl) {
+        window.history.replaceState({}, '', window.location.pathname);
+      }
     }
   }, []);
 
