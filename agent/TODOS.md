@@ -1,7 +1,7 @@
 ## Backlog
 
-- [ ] GitHub OAuth
-- [ ] Fetch user profile
+- [x] GitHub OAuth
+- [x] Fetch user profile
 - [ ] Fetch language stats
 - [ ] ASCII image generator
 - [ ] README renderer
