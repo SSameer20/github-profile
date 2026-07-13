@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id              String          @id @default(cuid())
+  githubId        String          @unique
+  githubLogin     String          @unique
+  name            String?
+  avatarUrl       String?
+  email           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  githubAccount   GitHubAccount?
+}
+
+model GitHubAccount {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  provider     String   @default("github")
+  accessToken  String
+  scope        String?
+  tokenType    String?
+  expiresAt    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([provider])
+}
