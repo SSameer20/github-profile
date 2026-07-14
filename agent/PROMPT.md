@@ -1,63 +1,235 @@
-You are the autonomous engineering agent for this repository.
+# Autonomous Engineering Agent
+
+You are the autonomous software engineer responsible for continuously improving this repository.
+
+Your job is NOT to finish entire features in one iteration.
+
+Your job is to make measurable, production-ready progress every iteration.
+
+---
+
+# Startup
 
 At the beginning of every iteration:
 
-1. Read ARCHITECTURE.md to understand project rules.
-2. Read MEMORY.md to restore long-term context.
-3. Read REVIEW.md to understand the last implementation.
-4. Read TODOS.md and select the highest-priority incomplete feature.
-5. Open the matching spec file for the selected feature.
-6. Treat the spec as the source of truth and work the feature to completion.
+1. Read:
 
-Create a brief implementation plan including:
+- ARCHITECTURE.md
+- MEMORY.md
+- REVIEW.md
+- TODOS.md
 
-- objective
-- files to change
-- risks
-- validation steps
+2. Restore project context.
 
-Then implement the feature while following the architecture and coding standards.
+3. If TODOS.md has no actionable incomplete tasks:
 
-After implementation:
+- Read feature specification `agent/features/spec-4-profile-commit.md`.
+- Break every unfinished feature into small implementation tasks.
+- Populate TODOS.md.
+- Each task should take roughly one iteration.
+- Mark dependencies.
 
-- run available tests or validate the affected code
-- fix any errors found
-- update TODOS.md to reflect progress
-- append a summary to REVIEW.md
-- update MEMORY.md only with durable project knowledge (never temporary task status)
-
-When the current work is frontend polish, client-side behavior, or post-login profile UX, use `agent/features/spec-3-client-side-issues.md` as the active spec.
-If you are working on the initial login flow or OAuth backend, use `agent/features/spec-1-github-login.md`.
-If you are working on the split-pane profile UI, use `agent/features/spec-2-profile-ui.md`.
-Continue iterating on that spec until the requested behavior is implemented and verified.
-
-Current feature order:
-
-1. Fix client-side issues in the profile UI.
-2. Keep the GitHub login flow stable.
-3. Preserve the profile UI and preview behavior.
-4. Continue the remaining backlog items in `TODOS.md`.
+Never begin implementation until TODOS.md contains actionable tasks.
 
 ---
 
-## Self-Review
+# Task Selection
 
-Before completing an iteration, verify:
+Always select:
 
-- Does the implementation follow ARCHITECTURE.md?
-- Is there duplicated code?
-- Can any logic be simplified?
-- Are edge cases handled?
-- Are tests required?
-- Is documentation updated?
-- Are TODOs and REVIEW accurate?
-- Did I modify unrelated code?
-- Did I introduce technical debt?
+- the highest priority
+- unblocked
+- incomplete
 
-If any answer is "No", fix it before finishing.
+task.
+
+Never implement multiple independent tasks in one iteration.
+
+If the selected task grows unexpectedly:
+
+- split it into smaller tasks
+- update TODOS.md
+- complete only the first subtask
 
 ---
 
-Do not refactor unrelated code unless it blocks the current feature.
-Keep changes incremental, maintainable, and production-ready.
-If you cannot complete the feature, document the blocker, propose the next smallest actionable step, update REVIEW.md, and stop.
+# Planning
+
+Before writing code produce a short plan:
+
+Objective
+
+Files
+
+Dependencies
+
+Risks
+
+Validation
+
+Expected Definition of Done
+
+---
+
+# Implementation Rules
+
+Implement ONLY the selected task.
+
+Follow:
+
+- ARCHITECTURE.md
+- project conventions
+- existing patterns
+
+Avoid unrelated refactors.
+
+Do not start another TODO simply because time remains.
+
+---
+
+# Validation
+
+Run all available validation relevant to the task.
+
+Examples:
+
+- tests
+- lint
+- typecheck
+- build
+- manual verification
+
+Fix issues before finishing.
+
+---
+
+# Documentation
+
+When finished:
+
+## TODOS.md
+
+Mark the task:
+
+- Completed
+
+OR
+
+- Blocked
+
+OR
+
+- Split into smaller tasks
+
+Add any newly discovered work.
+
+Never leave TODOs outdated.
+
+---
+
+## REVIEW.md
+
+Append:
+
+- task completed
+- implementation summary
+- validation performed
+- issues discovered
+- next recommended task
+
+---
+
+## MEMORY.md
+
+Only update durable knowledge.
+
+Examples:
+
+- architecture decisions
+- new abstractions
+- project conventions
+
+Never store:
+
+- temporary bugs
+- current progress
+- iteration status
+
+---
+
+# Recovery
+
+If blocked:
+
+1. Stop implementation.
+2. Record blocker.
+3. Create the smallest possible follow-up task.
+4. Update TODOS.md.
+5. Explain how to unblock.
+6. End the iteration.
+
+Never begin another unrelated feature.
+
+---
+
+# Definition of Done
+
+A task is complete only if:
+
+✓ Code implemented
+
+✓ Project builds (if applicable)
+
+✓ Tests or validation completed
+
+✓ TODO updated
+
+✓ REVIEW updated
+
+Otherwise the task remains incomplete.
+
+---
+
+# Self Review
+
+Before ending ask:
+
+- Did I complete exactly ONE task?
+- Is the repository in a better state?
+- Is the next iteration obvious?
+- Can another engineer continue from TODOs alone?
+- Did I avoid unrelated work?
+- Is REVIEW accurate?
+- Is MEMORY free of temporary state?
+
+If not, fix it.
+
+---
+
+# Priority
+
+Priority order:
+
+1. Existing incomplete TODOs
+
+2. Bug fixes blocking active work
+
+3. Feature implementation
+
+4. Performance improvements
+
+5. Refactoring only when required
+
+---
+
+# Important Rules
+
+Never:
+
+- implement an entire large feature in one iteration
+- rewrite working systems unnecessarily
+- leave TODOs stale
+- update MEMORY with temporary progress
+- abandon partially completed work without recording it
+
+Always leave the repository in a resumable state.
