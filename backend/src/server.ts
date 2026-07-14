@@ -289,6 +289,7 @@ app.post('/publish/readme', async (req, res) => {
 
   try {
     const payload = jwt.verify(token, config.jwtSecret) as { sub: string };
+    console.log('[publish/readme] request received', { sub: payload.sub });
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
       include: { githubAccount: true }
@@ -296,13 +297,35 @@ app.post('/publish/readme', async (req, res) => {
 
     const accessToken = user?.githubAccount?.accessToken;
     if (!user || !accessToken) {
+      console.warn('[publish/readme] missing user or access token', { sub: payload.sub });
       res.status(404).json({ error: 'GitHub account not found' });
+      return;
+    }
+
+    console.log('[publish/readme] github account scope', {
+      login: user.githubLogin,
+      scope: user.githubAccount?.scope ?? null,
+      tokenType: user.githubAccount?.tokenType ?? null
+    });
+
+    const tokenScope = user.githubAccount?.scope ?? '';
+    const hasRepoScope = tokenScope.split(/[,\s]+/).includes('repo');
+
+    if (!hasRepoScope) {
+      console.warn('[publish/readme] missing repo scope, reconnect required', {
+        login: user.githubLogin,
+        scope: tokenScope
+      });
+      res.status(403).json({
+        error: 'GitHub token is missing repo access. Disconnect and reconnect GitHub to publish README.md.'
+      });
       return;
     }
 
     const content = String(req.body?.content ?? '');
     const message = String(req.body?.message ?? '').trim() || 'Update README';
     if (!content.trim()) {
+      console.warn('[publish/readme] missing README content', { login: user.githubLogin });
       res.status(400).json({ error: 'Missing README content' });
       return;
     }
@@ -311,6 +334,7 @@ app.post('/publish/readme', async (req, res) => {
     const repo = user.githubLogin;
     const path = 'README.md';
     const commitPath = `${owner}/${path}`;
+    console.log('[publish/readme] target repository', { owner, repo, commitPath, message });
     const repoResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -324,7 +348,9 @@ app.post('/publish/readme', async (req, res) => {
     if (repoResponse.ok) {
       const repoData = await repoResponse.json() as { default_branch?: string | null };
       branch = repoData.default_branch ?? branch;
+      console.log('[publish/readme] repository exists', { owner, repo, branch });
     } else if (repoResponse.status === 404) {
+      console.log('[publish/readme] repository missing, creating', { owner, repo });
       const createRepoResponse = await fetch('https://api.github.com/user/repos', {
         method: 'POST',
         headers: {
@@ -343,6 +369,12 @@ app.post('/publish/readme', async (req, res) => {
 
       if (!createRepoResponse.ok) {
         const createRepoData = await createRepoResponse.json() as { message?: string };
+        console.error('[publish/readme] repository creation failed', {
+          owner,
+          repo,
+          status: createRepoResponse.status,
+          message: createRepoData.message
+        });
         res.status(createRepoResponse.status).json({
           error: createRepoData.message ?? 'Failed to create GitHub repository'
         });
@@ -351,8 +383,15 @@ app.post('/publish/readme', async (req, res) => {
 
       const createRepoData = await createRepoResponse.json() as { default_branch?: string | null };
       branch = createRepoData.default_branch ?? branch;
+      console.log('[publish/readme] repository created', { owner, repo, branch });
     } else {
       const repoData = await repoResponse.json() as { message?: string };
+      console.error('[publish/readme] repository lookup failed', {
+        owner,
+        repo,
+        status: repoResponse.status,
+        message: repoData.message
+      });
       res.status(repoResponse.status).json({
         error: repoData.message ?? 'Failed to read GitHub repository'
       });
@@ -373,6 +412,13 @@ app.post('/publish/readme', async (req, res) => {
     const existingData = existingResponse.ok
       ? await existingResponse.json() as { sha?: string }
       : null;
+    console.log('[publish/readme] existing README lookup', {
+      owner,
+      repo,
+      branch,
+      found: existingResponse.ok,
+      status: existingResponse.status
+    });
 
     const commitResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
       method: 'PUT',
@@ -397,18 +443,33 @@ app.post('/publish/readme', async (req, res) => {
     };
 
     if (!commitResponse.ok) {
+      console.error('[publish/readme] commit failed', {
+        owner,
+        repo,
+        branch,
+        status: commitResponse.status,
+        message: commitData.message
+      });
       res.status(commitResponse.status).json({
         error: commitData.message ?? 'Failed to publish README'
       });
       return;
     }
 
+    console.log('[publish/readme] commit succeeded', {
+      owner,
+      repo,
+      branch,
+      path: commitData.content?.path ?? commitPath,
+      sha: commitData.commit?.sha ?? null
+    });
     res.json({
       ok: true,
       path: commitData.content?.path ?? commitPath,
       commitSha: commitData.commit?.sha ?? null
     });
   } catch {
+    console.error('[publish/readme] invalid or expired session token');
     res.status(401).json({ error: 'Invalid token' });
   }
 });

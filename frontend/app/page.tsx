@@ -322,6 +322,11 @@ export default function Page() {
     setConnectionError('');
   }
 
+  async function handleReconnect() {
+    handleDisconnect();
+    await handleConnect();
+  }
+
   async function handleFile(file: File | null) {
     if (!file) return;
     setSessionLog((current) => [...current, 'ascii generation']);
@@ -371,6 +376,7 @@ export default function Page() {
     setCommitBusy(true);
     try {
       const message = commitText?.trim() || 'Update README';
+      setSessionLog((current) => [...current, `commit request: ${message}`]);
       const response = await fetch(`${apiBaseUrl()}/publish/readme`, {
         method: 'POST',
         headers: {
@@ -386,6 +392,10 @@ export default function Page() {
       const payload = await response.json() as { ok?: boolean; path?: string; commitSha?: string | null; error?: string };
       if (!response.ok) {
         setCommitMessage(payload.error ?? 'Commit failed');
+        setSessionLog((current) => [...current, `commit failed: ${payload.error ?? response.statusText}`]);
+        if (response.status === 403 && payload.error?.toLowerCase().includes('repo access')) {
+          setConnectionError(payload.error);
+        }
         return;
       }
 
@@ -394,6 +404,7 @@ export default function Page() {
       setCommitModalOpen(false);
     } catch {
       setCommitMessage('Commit request failed');
+      setSessionLog((current) => [...current, 'commit request failed']);
     } finally {
       setCommitBusy(false);
     }
@@ -436,12 +447,18 @@ export default function Page() {
             <button className="button-danger" onClick={handleDisconnect}>
               Disconnect
             </button>
+            {connectionError ? (
+              <button className="button-secondary" onClick={() => void handleReconnect()}>
+                Reconnect GitHub
+              </button>
+            ) : null}
             <button className="button-secondary" onClick={handleExport}>
               Export
             </button>
             <button className="button-primary" onClick={openCommitModal} disabled={commitBusy}>
               {commitBusy ? 'Committing...' : 'Commit'}
             </button>
+            {connectionError ? <p className="auth-error">{connectionError}</p> : null}
           </div>
         </header>
 

@@ -36,3 +36,6 @@
 - Kept the publish flow pointed at `POST /publish/readme` and taught the backend to use the supplied message when writing the README commit.
 - Verified both frontend and backend production builds after the change.
 - Fixed the GitHub-side `Not Found` failure by making the backend create the `{username}/{username}` repository when it does not exist before writing `README.md`.
+- Added backend logs for repository lookup, repository creation, README lookup, and commit success/failure, plus frontend session-log traces for commit requests.
+- Added an explicit repo-scope check so stale OAuth tokens fail with a reconnect message instead of a generic GitHub 404.
+- Added a reconnect action in the connected UI so users can reauthorize with the new scope when the server logs show `read:user,user:email` only.
