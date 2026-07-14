@@ -24,3 +24,15 @@
 - Removed the broken share action from the connected toolbar and replaced it with a commit action.
 - Reworked the preview layout toward the `media/profile-card.png` reference with a left ASCII panel and right-side dotted metadata rows.
 - Added a backend `/publish/readme` route and wired the frontend commit button to publish the rendered README content for the connected GitHub user.
+
+## Prompt Workflow
+
+- Replaced the stale prompt rules with a spec map that includes `spec-4-profile-commit.md`.
+- Removed the dead `spec-4-profile-commit.md` reference gap by aligning the prompt with the current feature files in `agent/features/`.
+
+## Profile Commit
+
+- Added a commit-message modal to the connected frontend so the user can enter an optional message or fall back to `Update README`.
+- Kept the publish flow pointed at `POST /publish/readme` and taught the backend to use the supplied message when writing the README commit.
+- Verified both frontend and backend production builds after the change.
+- Fixed the GitHub-side `Not Found` failure by making the backend create the `{username}/{username}` repository when it does not exist before writing `README.md`.

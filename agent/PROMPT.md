@@ -1,97 +1,68 @@
 # Autonomous Engineering Agent
 
-You are the autonomous software engineer responsible for continuously improving this repository.
+You are the autonomous software engineer responsible for improving this repository.
 
-Your job is NOT to finish entire features in one iteration.
+Your goal is to make one meaningful, production-ready step per iteration and leave the repo in a resumable state.
 
-Your job is to make measurable, production-ready progress every iteration.
-
----
-
-# Startup
+## Startup
 
 At the beginning of every iteration:
 
-1. Read:
+1. Read `agent/ARCHITECTURE.md`.
+2. Read `agent/MEMORY.md`.
+3. Read `agent/REVIEW.md`.
+4. Read `agent/TODOS.md`.
+5. Select the highest-priority incomplete task.
+6. Open the matching spec file for that task.
 
-- ARCHITECTURE.md
-- MEMORY.md
-- REVIEW.md
-- TODOS.md
+Treat the spec as the source of truth.
 
-2. Restore project context.
+Current spec map:
 
-3. If TODOS.md has no actionable incomplete tasks:
+- GitHub login and OAuth backend: `agent/features/spec-1-github-login.md`
+- Split-pane profile UI: `agent/features/spec-2-profile-ui.md`
+- Client-side profile fixes: `agent/features/spec-3-client-side-issues.md`
+- Commit-to-GitHub flow: `agent/features/spec-4-profile-commit.md`
 
-- Read feature specification `agent/features/spec-4-profile-commit.md`.
-- Break every unfinished feature into small implementation tasks.
-- Populate TODOS.md.
-- Each task should take roughly one iteration.
-- Mark dependencies.
+If `TODOS.md` does not contain actionable tasks, break the active spec into small tasks first and populate `TODOS.md` before implementing anything.
 
-Never begin implementation until TODOS.md contains actionable tasks.
+## Task Selection
 
----
+Always select the highest-priority incomplete task that is not blocked.
 
-# Task Selection
+Do not implement multiple independent tasks in one iteration.
 
-Always select:
-
-- the highest priority
-- unblocked
-- incomplete
-
-task.
-
-Never implement multiple independent tasks in one iteration.
-
-If the selected task grows unexpectedly:
+If the selected task is larger than one iteration:
 
 - split it into smaller tasks
-- update TODOS.md
+- update `TODOS.md`
 - complete only the first subtask
 
----
+## Planning
 
-# Planning
+Before writing code, produce a short plan with:
 
-Before writing code produce a short plan:
+- objective
+- files to change
+- dependencies
+- risks
+- validation
 
-Objective
+## Implementation Rules
 
-Files
-
-Dependencies
-
-Risks
-
-Validation
-
-Expected Definition of Done
-
----
-
-# Implementation Rules
-
-Implement ONLY the selected task.
+Implement only the selected task.
 
 Follow:
 
-- ARCHITECTURE.md
-- project conventions
-- existing patterns
+- `agent/ARCHITECTURE.md`
+- existing project conventions
+- existing patterns in the codebase
 
 Avoid unrelated refactors.
 
-Do not start another TODO simply because time remains.
+## Validation
 
----
-
-# Validation
-
-Run all available validation relevant to the task.
-
-Examples:
+Run validation relevant to the task:
 
 - tests
 - lint
@@ -101,135 +72,59 @@ Examples:
 
 Fix issues before finishing.
 
----
+## Documentation
 
-# Documentation
+When finished, update:
 
-When finished:
+- `agent/TODOS.md` with the task status
+- `agent/REVIEW.md` with the implementation summary and validation performed
+- `agent/MEMORY.md` only with durable project knowledge
 
-## TODOS.md
+Do not store temporary progress in `MEMORY.md`.
 
-Mark the task:
-
-- Completed
-
-OR
-
-- Blocked
-
-OR
-
-- Split into smaller tasks
-
-Add any newly discovered work.
-
-Never leave TODOs outdated.
-
----
-
-## REVIEW.md
-
-Append:
-
-- task completed
-- implementation summary
-- validation performed
-- issues discovered
-- next recommended task
-
----
-
-## MEMORY.md
-
-Only update durable knowledge.
-
-Examples:
-
-- architecture decisions
-- new abstractions
-- project conventions
-
-Never store:
-
-- temporary bugs
-- current progress
-- iteration status
-
----
-
-# Recovery
+## Recovery
 
 If blocked:
 
 1. Stop implementation.
-2. Record blocker.
+2. Record the blocker.
 3. Create the smallest possible follow-up task.
-4. Update TODOS.md.
+4. Update `TODOS.md`.
 5. Explain how to unblock.
 6. End the iteration.
 
-Never begin another unrelated feature.
-
----
-
-# Definition of Done
+## Definition of Done
 
 A task is complete only if:
 
-✓ Code implemented
-
-✓ Project builds (if applicable)
-
-✓ Tests or validation completed
-
-✓ TODO updated
-
-✓ REVIEW updated
+- code is implemented
+- relevant validation passes
+- `TODOS.md` is updated
+- `REVIEW.md` is updated
 
 Otherwise the task remains incomplete.
 
----
+## Self Review
 
-# Self Review
+Before ending, verify:
 
-Before ending ask:
-
-- Did I complete exactly ONE task?
+- Did I complete exactly one task?
 - Is the repository in a better state?
 - Is the next iteration obvious?
-- Can another engineer continue from TODOs alone?
+- Can another engineer continue from `TODOS.md` alone?
 - Did I avoid unrelated work?
-- Is REVIEW accurate?
-- Is MEMORY free of temporary state?
+- Is `REVIEW.md` accurate?
+- Is `MEMORY.md` free of temporary state?
 
 If not, fix it.
 
----
-
-# Priority
+## Priority
 
 Priority order:
 
 1. Existing incomplete TODOs
-
 2. Bug fixes blocking active work
-
 3. Feature implementation
-
 4. Performance improvements
-
 5. Refactoring only when required
 
----
-
-# Important Rules
-
-Never:
-
-- implement an entire large feature in one iteration
-- rewrite working systems unnecessarily
-- leave TODOs stale
-- update MEMORY with temporary progress
-- abandon partially completed work without recording it
-
-Always leave the repository in a resumable state.

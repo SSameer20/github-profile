@@ -138,6 +138,8 @@ export default function Page() {
   const [busy, setBusy] = useState(false);
   const [commitBusy, setCommitBusy] = useState(false);
   const [commitMessage, setCommitMessage] = useState('');
+  const [commitDraft, setCommitDraft] = useState('');
+  const [commitModalOpen, setCommitModalOpen] = useState(false);
   const [connectionError, setConnectionError] = useState('');
 
   useEffect(() => {
@@ -354,10 +356,21 @@ export default function Page() {
     URL.revokeObjectURL(url);
   }
 
-  async function handleCommit() {
-    setCommitBusy(true);
+  function openCommitModal() {
+    setCommitDraft('');
     setCommitMessage('');
+    setCommitModalOpen(true);
+  }
+
+  function closeCommitModal() {
+    if (commitBusy) return;
+    setCommitModalOpen(false);
+  }
+
+  async function submitCommit(commitText?: string) {
+    setCommitBusy(true);
     try {
+      const message = commitText?.trim() || 'Update README';
       const response = await fetch(`${apiBaseUrl()}/publish/readme`, {
         method: 'POST',
         headers: {
@@ -365,7 +378,8 @@ export default function Page() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          content: buildReadmeContent(profile, github)
+          content: buildReadmeContent(profile, github),
+          message
         })
       });
 
@@ -377,6 +391,7 @@ export default function Page() {
 
       setCommitMessage(`Committed to ${payload.path ?? 'README.md'}`);
       setSessionLog((current) => [...current, '✓ Committed README']);
+      setCommitModalOpen(false);
     } catch {
       setCommitMessage('Commit request failed');
     } finally {
@@ -424,7 +439,7 @@ export default function Page() {
             <button className="button-secondary" onClick={handleExport}>
               Export
             </button>
-            <button className="button-primary" onClick={handleCommit} disabled={commitBusy}>
+            <button className="button-primary" onClick={openCommitModal} disabled={commitBusy}>
               {commitBusy ? 'Committing...' : 'Commit'}
             </button>
           </div>
@@ -561,6 +576,55 @@ export default function Page() {
             {commitMessage ? <div className="commit-status">{commitMessage}</div> : null}
           </div>
         </section>
+
+        {commitModalOpen ? (
+          <div className="modal-backdrop" role="presentation" onClick={closeCommitModal}>
+            <div
+              className="modal-card"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="commit-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="modal-header">
+                <div>
+                  <div className="eyebrow">Commit README</div>
+                  <h2 id="commit-title">Add an optional commit message</h2>
+                </div>
+                <button className="button-secondary" onClick={closeCommitModal} type="button">
+                  Cancel
+                </button>
+              </div>
+              <label className="field modal-field" htmlFor="commit-message">
+                <span>Commit message</span>
+                <input
+                  id="commit-message"
+                  value={commitDraft}
+                  placeholder="Update README"
+                  onChange={(event) => setCommitDraft(event.target.value)}
+                />
+              </label>
+              <div className="modal-actions">
+                <button
+                  className="button-secondary"
+                  onClick={() => void submitCommit('')}
+                  disabled={commitBusy}
+                  type="button"
+                >
+                  Use default
+                </button>
+                <button
+                  className="button-primary"
+                  onClick={() => void submitCommit(commitDraft)}
+                  disabled={commitBusy}
+                  type="button"
+                >
+                  {commitBusy ? 'Committing...' : 'Commit to GitHub'}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </main>
   );

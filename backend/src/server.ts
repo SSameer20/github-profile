@@ -301,6 +301,7 @@ app.post('/publish/readme', async (req, res) => {
     }
 
     const content = String(req.body?.content ?? '');
+    const message = String(req.body?.message ?? '').trim() || 'Update README';
     if (!content.trim()) {
       res.status(400).json({ error: 'Missing README content' });
       return;
@@ -308,8 +309,56 @@ app.post('/publish/readme', async (req, res) => {
 
     const owner = user.githubLogin;
     const repo = user.githubLogin;
-    const branch = 'main';
     const path = 'README.md';
+    const commitPath = `${owner}/${path}`;
+    const repoResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28'
+      }
+    });
+
+    let branch = 'main';
+
+    if (repoResponse.ok) {
+      const repoData = await repoResponse.json() as { default_branch?: string | null };
+      branch = repoData.default_branch ?? branch;
+    } else if (repoResponse.status === 404) {
+      const createRepoResponse = await fetch('https://api.github.com/user/repos', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+          'X-GitHub-Api-Version': '2022-11-28'
+        },
+        body: JSON.stringify({
+          name: repo,
+          description: 'GitHub profile card README',
+          private: false,
+          auto_init: true
+        })
+      });
+
+      if (!createRepoResponse.ok) {
+        const createRepoData = await createRepoResponse.json() as { message?: string };
+        res.status(createRepoResponse.status).json({
+          error: createRepoData.message ?? 'Failed to create GitHub repository'
+        });
+        return;
+      }
+
+      const createRepoData = await createRepoResponse.json() as { default_branch?: string | null };
+      branch = createRepoData.default_branch ?? branch;
+    } else {
+      const repoData = await repoResponse.json() as { message?: string };
+      res.status(repoResponse.status).json({
+        error: repoData.message ?? 'Failed to read GitHub repository'
+      });
+      return;
+    }
+
     const existingResponse = await fetch(
       `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(branch)}`,
       {
@@ -334,7 +383,7 @@ app.post('/publish/readme', async (req, res) => {
         'X-GitHub-Api-Version': '2022-11-28'
       },
       body: JSON.stringify({
-        message: `Update profile card for ${user.githubLogin}`,
+        message,
         content: Buffer.from(content, 'utf8').toString('base64'),
         branch,
         sha: existingData?.sha
@@ -356,7 +405,7 @@ app.post('/publish/readme', async (req, res) => {
 
     res.json({
       ok: true,
-      path: commitData.content?.path ?? path,
+      path: commitData.content?.path ?? commitPath,
       commitSha: commitData.commit?.sha ?? null
     });
   } catch {
