@@ -251,21 +251,6 @@ main {
   font-family: var(--font-mono);
 }
 
-.terminal-title {
-  display: grid;
-  gap: 2px;
-  color: var(--green);
-  font-size: 12px;
-  margin-bottom: 12px;
-}
-
-.terminal-grid {
-  display: grid;
-  grid-template-columns: minmax(300px, 0.37fr) 1fr;
-  gap: 18px;
-  align-items: start;
-}
-
 .portrait-block {
   display: grid;
   gap: 10px;
@@ -290,11 +275,13 @@ main {
 }
 
 .ascii-box.portrait {
-  min-height: 420px;
+  min-height: 520px;
   white-space: pre-wrap;
   word-break: break-word;
   align-content: start;
   justify-items: start;
+  font-size: 7px;
+  line-height: 0.92;
 }
 
 .terminal-name {
@@ -305,28 +292,73 @@ main {
   letter-spacing: 0.08em;
 }
 
-.terminal-content {
-  display: grid;
+.card-head {
+  display: flex;
+  align-items: center;
   gap: 12px;
+  margin-bottom: 12px;
+  color: var(--text);
+  font-size: 14px;
 }
 
-.terminal-section {
+.card-username {
+  color: var(--text);
+}
+
+.card-divider {
+  flex: 1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.9fr) 1.3fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.card-body {
+  display: grid;
+  gap: 16px;
+}
+
+.card-section {
+  display: grid;
+  gap: 8px;
+}
+
+.card-section-title {
+  color: var(--accent);
+  font-size: 13px;
+  text-transform: none;
+}
+
+.card-lines {
   display: grid;
   gap: 6px;
 }
 
-.section-rule {
-  color: rgba(255, 255, 255, 0.42);
-  font-size: 12px;
-  line-height: 1;
+.card-line {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
-.section-title {
-  color: var(--green);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 13px;
+.card-label {
+  color: #f0b06f;
+  white-space: nowrap;
+}
+
+.card-dots {
+  border-bottom: 2px dotted rgba(255, 255, 255, 0.14);
+  transform: translateY(2px);
+}
+
+.card-value {
+  color: #9ec7ff;
+  text-align: right;
 }
 
 .kv-list {
@@ -383,8 +415,8 @@ main {
 }
 
 .session-log li::before {
-  content: '✓ ';
-  color: var(--green);
+  content: '• ';
+  color: var(--accent-2);
 }
 
 .editor-panel {
@@ -429,6 +461,12 @@ main {
 .auth-error {
   margin: 14px 0 0;
   color: #ffb5b5;
+  font-size: 12px;
+}
+
+.commit-status {
+  margin-top: 14px;
+  color: var(--accent-2);
   font-size: 12px;
 }
 

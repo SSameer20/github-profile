@@ -65,6 +65,42 @@ function apiBaseUrl() {
   return process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080';
 }
 
+function previewUptime(createdAt?: string | null) {
+  if (!createdAt) return 'synced';
+  const years = Math.max(1, Math.floor((Date.now() - new Date(createdAt).getTime()) / 31536000000));
+  return `${years} years on GitHub`;
+}
+
+function buildReadmeContent(profile: ProfileForm, github: GithubSummary | null) {
+  const languages = github?.languages.length ? github.languages : ['TypeScript', 'JavaScript', 'Python'];
+
+  return [
+    `# ${profile.identifier}`,
+    '',
+    `- Classification: ${profile.classification}`,
+    `- Git Pointer: ${profile.gitPointer}`,
+    `- Core Kernel: ${profile.coreKernel}`,
+    '',
+    '## Profile Abstract',
+    profile.profileAbstract,
+    '',
+    '## GitHub',
+    `- Repositories: ${github?.publicRepos ?? 0}`,
+    `- Followers: ${github?.followers ?? 0}`,
+    `- Following: ${github?.following ?? 0}`,
+    `- Top Languages: ${languages.join(', ')}`,
+    '',
+    '## ASCII Avatar',
+    '```text',
+    profile.asciiAvatar || defaultAscii,
+    '```'
+  ].join('\n');
+}
+
+function asciiPreview(source: string) {
+  return source || defaultAscii;
+}
+
 async function fetchAsciiFromImage(file: File) {
   const dataUrl = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -100,6 +136,8 @@ export default function Page() {
   const [github, setGithub] = useState<GithubSummary | null>(null);
   const [sessionLog, setSessionLog] = useState<SessionState[]>(['idle']);
   const [busy, setBusy] = useState(false);
+  const [commitBusy, setCommitBusy] = useState(false);
+  const [commitMessage, setCommitMessage] = useState('');
   const [connectionError, setConnectionError] = useState('');
 
   useEffect(() => {
@@ -198,7 +236,6 @@ export default function Page() {
   }, [sessionToken]);
 
   const preview = useMemo(() => {
-    const ascii = profile.asciiAvatar || defaultAscii;
     const githubLanguages = github?.languages.length ? github.languages : ['TypeScript', 'JavaScript', 'Python', 'Go', 'Rust'];
     const sections: PreviewSection[] = [
       {
@@ -206,40 +243,39 @@ export default function Page() {
         kind: 'kv',
         items: [
           { label: 'OS', value: 'Linux' },
-          { label: 'Kernel', value: '6.12.1' },
-          { label: 'Shell', value: 'zsh' },
-          { label: 'Terminal', value: 'Ghostty' },
-          { label: 'Editor', value: 'Neovim' },
-          { label: 'IDE', value: 'VSCode' }
+          { label: 'Uptime', value: previewUptime(github?.createdAt) },
+          { label: 'Host', value: github?.company || 'GitHub-connected machine' },
+          { label: 'Kernel', value: profile.coreKernel },
+          { label: 'IDE', value: 'VSCode 1.96.0' }
         ]
       },
-      { title: 'Languages', kind: 'list', items: githubLanguages },
-      { title: 'Frameworks', kind: 'list', items: ['React', 'Next.js', 'Express', 'FastAPI'] },
-      { title: 'Infrastructure', kind: 'list', items: ['Docker', 'Kubernetes', 'AWS', 'GCP', 'Terraform'] },
-      { title: 'AI Stack', kind: 'list', items: ['OpenAI', 'Claude', 'Gemini', 'MCP', 'LangGraph'] },
       {
-        title: 'GitHub',
+        title: 'Languages',
         kind: 'kv',
         items: [
-          { label: 'Repositories', value: String(github?.publicRepos ?? 0) },
-          { label: 'Stars', value: github ? 'synced' : 'loading' },
-          { label: 'Followers', value: String(github?.followers ?? 0) },
-          { label: 'Following', value: String(github?.following ?? 0) },
-          { label: 'Gists', value: String(github?.publicGists ?? 0) },
-          { label: 'Contributions', value: github ? 'synced via profile' : 'loading' },
-          { label: 'Pull Requests', value: github ? 'synced via activity' : 'loading' },
-          { label: 'Issues', value: github ? 'synced via activity' : 'loading' },
-          { label: 'Top Languages', value: githubLanguages.join(', ') }
+          { label: 'Programming', value: githubLanguages.join(', ') },
+          { label: 'Computer', value: 'HTML, CSS, JSON, Markdown' },
+          { label: 'Real', value: 'English, GitHub' }
         ]
       },
       {
         title: 'Contact',
         kind: 'kv',
         items: [
-          { label: 'Email', value: github?.company ? `${profile.identifier.toLowerCase()}@${github.company.replace(/\s+/g, '').toLowerCase()}.dev` : 'sameer@example.com' },
+          { label: 'Email', value: github?.company ? `${profile.identifier.toLowerCase().replace(/\s+/g, '.')}@${github.company.replace(/\s+/g, '').toLowerCase()}.com` : 'sameer@example.com' },
           { label: 'Website', value: github?.blog || 'sameer.dev' },
-          { label: 'LinkedIn', value: 'linkedin.com/in/sameer' },
-          { label: 'Twitter', value: '@sameer' }
+          { label: 'LinkedIn', value: 'linkedin.com/in/sameer' }
+        ]
+      },
+      {
+        title: 'GitHub Stats',
+        kind: 'kv',
+        items: [
+          { label: 'Repos', value: String(github?.publicRepos ?? 0) },
+          { label: 'Followers', value: String(github?.followers ?? 0) },
+          { label: 'Following', value: String(github?.following ?? 0) },
+          { label: 'Gists', value: String(github?.publicGists ?? 0) },
+          { label: 'Top Languages', value: githubLanguages.join(', ') }
         ]
       }
     ];
@@ -249,11 +285,11 @@ export default function Page() {
       os: 'Linux',
       role: profile.classification,
       kernel: '6.12.1',
-      uptime: github?.createdAt ? `${Math.max(1, Math.floor((Date.now() - new Date(github.createdAt).getTime()) / 31536000000))} years on GitHub` : 'synced',
+      uptime: previewUptime(github?.createdAt),
       bio: github?.location ? `${profile.profileAbstract} Based in ${github.location}.` : profile.profileAbstract,
       sections
     };
-  }, [profile]);
+  }, [profile, github]);
 
   async function handleConnect() {
     setBusy(true);
@@ -318,11 +354,34 @@ export default function Page() {
     URL.revokeObjectURL(url);
   }
 
-  function handleShare() {
-    void navigator.share?.({
-      title: 'GitHub Profile Card',
-      text: `${profile.identifier} | ${profile.classification}`
-    });
+  async function handleCommit() {
+    setCommitBusy(true);
+    setCommitMessage('');
+    try {
+      const response = await fetch(`${apiBaseUrl()}/publish/readme`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${sessionToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          content: buildReadmeContent(profile, github)
+        })
+      });
+
+      const payload = await response.json() as { ok?: boolean; path?: string; commitSha?: string | null; error?: string };
+      if (!response.ok) {
+        setCommitMessage(payload.error ?? 'Commit failed');
+        return;
+      }
+
+      setCommitMessage(`Committed to ${payload.path ?? 'README.md'}`);
+      setSessionLog((current) => [...current, '✓ Committed README']);
+    } catch {
+      setCommitMessage('Commit request failed');
+    } finally {
+      setCommitBusy(false);
+    }
   }
 
   if (!connected) {
@@ -365,8 +424,8 @@ export default function Page() {
             <button className="button-secondary" onClick={handleExport}>
               Export
             </button>
-            <button className="button-secondary" onClick={handleShare}>
-              Share
+            <button className="button-primary" onClick={handleCommit} disabled={commitBusy}>
+              {commitBusy ? 'Committing...' : 'Commit'}
             </button>
           </div>
         </header>
@@ -447,34 +506,30 @@ export default function Page() {
         <section className="panel terminal-panel">
           <div className="panel-header">
             <span>Real-Time Preview</span>
-            <span className="eyebrow">fastfetch</span>
+            <span className="eyebrow">profile-card</span>
           </div>
           <div className="terminal-window">
-            <div className="terminal-title">
-              <span>sameer@terminal</span>
-              <span>────────────────────────────</span>
-              <span>$ fastfetch</span>
+            <div className="card-head">
+              <span className="card-username">{preview.username}</span>
+              <span className="card-divider" aria-hidden="true" />
             </div>
 
-            <div className="terminal-grid">
+            <div className="card-grid">
               <div className="portrait-block">
-                <div className="ascii-box portrait">{profile.asciiAvatar || defaultAscii}</div>
-                <div className="terminal-name">{preview.username}</div>
+                <div className="ascii-box portrait">{asciiPreview(profile.asciiAvatar)}</div>
               </div>
 
-              <div className="terminal-content">
+              <div className="card-body">
                 {preview.sections.map((section) => (
-                  <section className="terminal-section" key={section.title}>
-                    <div className="section-rule">────────────────────────────</div>
-                    <div className="section-title">{section.title}</div>
-                    <div className="section-rule">────────────────────────────</div>
-
+                  <section className="card-section" key={section.title}>
+                    <div className="card-section-title">{section.title}</div>
                     {section.kind === 'kv' ? (
-                      <div className="kv-list">
+                      <div className="card-lines">
                         {section.items.map((item) => (
-                          <div className="kv-line" key={`${section.title}-${item.label}`}>
-                            <span className="kv-label">{item.label}</span>
-                            <span className="kv-value">{item.value}</span>
+                          <div className="card-line" key={`${section.title}-${item.label}`}>
+                            <span className="card-label">{item.label}</span>
+                            <span className="card-dots" aria-hidden="true" />
+                            <span className="card-value">{item.value}</span>
                           </div>
                         ))}
                       </div>
@@ -488,25 +543,22 @@ export default function Page() {
                   </section>
                 ))}
 
-                <section className="terminal-section">
-                  <div className="section-rule">────────────────────────────</div>
-                  <div className="section-title">About</div>
-                  <div className="section-rule">────────────────────────────</div>
+                <section className="card-section">
+                  <div className="card-section-title">Bio</div>
                   <p className="about-text">{preview.bio}</p>
                 </section>
 
-                <section className="terminal-section">
-                  <div className="section-rule">────────────────────────────</div>
-                  <div className="section-title">Session Log</div>
-                  <div className="section-rule">────────────────────────────</div>
+                <section className="card-section">
+                  <div className="card-section-title">Session Log</div>
                   <ul className="session-log">
                     {sessionLog.map((entry, index) => (
-                      <li key={`${entry}-${index}`}>✓ {entry}</li>
+                      <li key={`${entry}-${index}`}>{entry}</li>
                     ))}
                   </ul>
                 </section>
               </div>
             </div>
+            {commitMessage ? <div className="commit-status">{commitMessage}</div> : null}
           </div>
         </section>
       </div>

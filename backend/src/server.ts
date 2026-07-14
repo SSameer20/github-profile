@@ -67,7 +67,7 @@ app.get('/auth/github/start', (_req, res) => {
   const params = new URLSearchParams({
     client_id: config.githubClientId,
     redirect_uri: config.githubCallbackUrl,
-    scope: 'read:user user:email',
+    scope: 'read:user user:email repo',
     state,
     prompt: 'select_account'
   });
@@ -273,6 +273,92 @@ app.get('/me', async (req, res) => {
     }
 
     res.json({ user, github });
+  } catch {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+});
+
+app.post('/publish/readme', async (req, res) => {
+  const authHeader = req.headers.authorization ?? '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+
+  if (!token) {
+    res.status(401).json({ error: 'Missing token' });
+    return;
+  }
+
+  try {
+    const payload = jwt.verify(token, config.jwtSecret) as { sub: string };
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
+      include: { githubAccount: true }
+    });
+
+    const accessToken = user?.githubAccount?.accessToken;
+    if (!user || !accessToken) {
+      res.status(404).json({ error: 'GitHub account not found' });
+      return;
+    }
+
+    const content = String(req.body?.content ?? '');
+    if (!content.trim()) {
+      res.status(400).json({ error: 'Missing README content' });
+      return;
+    }
+
+    const owner = user.githubLogin;
+    const repo = user.githubLogin;
+    const branch = 'main';
+    const path = 'README.md';
+    const existingResponse = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(branch)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28'
+        }
+      }
+    );
+
+    const existingData = existingResponse.ok
+      ? await existingResponse.json() as { sha?: string }
+      : null;
+
+    const commitResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/vnd.github+json',
+        'Content-Type': 'application/json',
+        'X-GitHub-Api-Version': '2022-11-28'
+      },
+      body: JSON.stringify({
+        message: `Update profile card for ${user.githubLogin}`,
+        content: Buffer.from(content, 'utf8').toString('base64'),
+        branch,
+        sha: existingData?.sha
+      })
+    });
+
+    const commitData = await commitResponse.json() as {
+      commit?: { sha?: string };
+      content?: { path?: string };
+      message?: string;
+    };
+
+    if (!commitResponse.ok) {
+      res.status(commitResponse.status).json({
+        error: commitData.message ?? 'Failed to publish README'
+      });
+      return;
+    }
+
+    res.json({
+      ok: true,
+      path: commitData.content?.path ?? path,
+      commitSha: commitData.commit?.sha ?? null
+    });
   } catch {
     res.status(401).json({ error: 'Invalid token' });
   }
