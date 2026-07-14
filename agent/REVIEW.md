@@ -50,3 +50,8 @@
 ## Backend Root
 
 - Added a `/` route in `backend/src/server.ts` that renders a small status page confirming the API server is running.
+
+## CORS
+
+- Updated backend CORS handling to accept a configurable list of frontend origins.
+- Added `https://github-profile-gukw.onrender.com` to the example allowed origins list for the deployed frontend.

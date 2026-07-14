@@ -8,7 +8,23 @@ import { prisma } from './prisma';
 
 const app = express();
 
-app.use(cors({ origin: config.frontendUrl, credentials: true }));
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    const allowedOrigins = new Set([...config.frontendOrigins, config.frontendUrl]);
+    if (allowedOrigins.has(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error(`CORS blocked for origin ${origin}`));
+  },
+  credentials: true
+}));
 app.use(express.json({ limit: '10mb' }));
 
 app.get('/', (_req, res) => {
