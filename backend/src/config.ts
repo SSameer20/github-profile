@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 function parseFrontendOrigins() {
-  const raw = process.env.FRONTEND_URLS ?? process.env.FRONTEND_URL ?? 'http://localhost:3000';
+  const raw = process.env.FRONTEND_URLS ?? process.env.FRONTEND_URL ?? 'http://localhost:3000,https://github-profile-gukw.onrender.com,https://github-profile-gamma-orpin.vercel.app';
   return raw
     .split(',')
     .map((origin) => origin.trim())

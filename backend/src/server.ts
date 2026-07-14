@@ -21,7 +21,8 @@ app.use(cors({
       return;
     }
 
-    callback(new Error(`CORS blocked for origin ${origin}`));
+    console.warn('[cors] blocked origin', { origin, allowedOrigins: [...allowedOrigins] });
+    callback(null, false);
   },
   credentials: true
 }));

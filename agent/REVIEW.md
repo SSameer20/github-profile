@@ -55,3 +55,4 @@
 
 - Updated backend CORS handling to accept a configurable list of frontend origins.
 - Added `https://github-profile-gukw.onrender.com` to the example allowed origins list for the deployed frontend.
+- Added `https://github-profile-gamma-orpin.vercel.app` to the default allowlist and changed blocked origins to log a warning instead of throwing an exception.
