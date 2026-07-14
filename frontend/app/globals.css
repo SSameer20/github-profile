@@ -206,7 +206,8 @@ main {
 
 .button-primary,
 .button-secondary,
-.button-ghost {
+.button-ghost,
+.button-danger {
   border-radius: 8px;
   padding: 10px 14px;
   border: 1px solid transparent;
@@ -225,6 +226,12 @@ main {
   background: rgba(255, 255, 255, 0.03);
   color: var(--text);
   border-color: rgba(126, 179, 255, 0.12);
+}
+
+.button-danger {
+  background: rgba(255, 107, 107, 0.08);
+  color: #ffb5b5;
+  border-color: rgba(255, 107, 107, 0.24);
 }
 
 .button-ghost {
@@ -417,6 +424,12 @@ main {
 .auth-card p {
   color: var(--muted);
   margin: 16px 0 28px;
+}
+
+.auth-error {
+  margin: 14px 0 0;
+  color: #ffb5b5;
+  font-size: 12px;
 }
 
 @media (max-width: 1180px) {

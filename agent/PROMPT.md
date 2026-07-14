@@ -26,8 +26,17 @@ After implementation:
 - append a summary to REVIEW.md
 - update MEMORY.md only with durable project knowledge (never temporary task status)
 
-When the active feature is GitHub login, use `agent/features/spec-2-profile-ui.md` as the spec.
+When the current work is frontend polish, client-side behavior, or post-login profile UX, use `agent/features/spec-3-client-side-issues.md` as the active spec.
+If you are working on the initial login flow or OAuth backend, use `agent/features/spec-1-github-login.md`.
+If you are working on the split-pane profile UI, use `agent/features/spec-2-profile-ui.md`.
 Continue iterating on that spec until the requested behavior is implemented and verified.
+
+Current feature order:
+
+1. Fix client-side issues in the profile UI.
+2. Keep the GitHub login flow stable.
+3. Preserve the profile UI and preview behavior.
+4. Continue the remaining backlog items in `TODOS.md`.
 
 ---
 

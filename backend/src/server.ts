@@ -68,7 +68,8 @@ app.get('/auth/github/start', (_req, res) => {
     client_id: config.githubClientId,
     redirect_uri: config.githubCallbackUrl,
     scope: 'read:user user:email',
-    state
+    state,
+    prompt: 'select_account'
   });
 
   res.json({

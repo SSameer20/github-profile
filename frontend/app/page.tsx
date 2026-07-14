@@ -100,6 +100,7 @@ export default function Page() {
   const [github, setGithub] = useState<GithubSummary | null>(null);
   const [sessionLog, setSessionLog] = useState<SessionState[]>(['idle']);
   const [busy, setBusy] = useState(false);
+  const [connectionError, setConnectionError] = useState('');
 
   useEffect(() => {
     const tokenFromUrl = new URLSearchParams(window.location.search).get('token') ?? '';
@@ -256,15 +257,31 @@ export default function Page() {
 
   async function handleConnect() {
     setBusy(true);
+    setConnectionError('');
     try {
       const response = await fetch(`${apiBaseUrl()}/auth/github/start`);
       const data = await response.json() as { authorizationUrl?: string };
       if (data.authorizationUrl) {
         window.location.href = data.authorizationUrl;
       }
+      if (!data.authorizationUrl) {
+        setConnectionError('GitHub connect did not return an authorization URL.');
+      }
+    } catch {
+      setConnectionError(`Unable to reach the backend at ${apiBaseUrl()}.`);
     } finally {
       setBusy(false);
     }
+  }
+
+  function handleDisconnect() {
+    window.localStorage.removeItem('sessionToken');
+    setConnected(false);
+    setSessionToken('');
+    setGithub(null);
+    setProfile(initialProfile);
+    setSessionLog(['idle']);
+    setConnectionError('');
   }
 
   async function handleFile(file: File | null) {
@@ -322,6 +339,7 @@ export default function Page() {
             <button className="button-primary" onClick={handleConnect} disabled={busy}>
               {busy ? 'Connecting...' : 'Connect to GitHub'}
             </button>
+            {connectionError ? <p className="auth-error">{connectionError}</p> : null}
           </div>
         </section>
       </main>
@@ -341,6 +359,9 @@ export default function Page() {
             </p>
           </div>
           <div className="actions">
+            <button className="button-danger" onClick={handleDisconnect}>
+              Disconnect
+            </button>
             <button className="button-secondary" onClick={handleExport}>
               Export
             </button>
