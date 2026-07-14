@@ -11,6 +11,81 @@ const app = express();
 app.use(cors({ origin: config.frontendUrl, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 
+app.get('/', (_req, res) => {
+  res.status(200).send(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Backend Running</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #071018;
+        --panel: #0d1824;
+        --text: #d8e4f0;
+        --muted: #7f97ad;
+        --accent: #67a2ff;
+        --border: rgba(126, 179, 255, 0.16);
+      }
+      html, body {
+        margin: 0;
+        min-height: 100%;
+        background: radial-gradient(circle at top left, rgba(103, 162, 255, 0.18), transparent 28%), linear-gradient(180deg, #09111a 0%, #050b12 100%);
+        color: var(--text);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+      body {
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        padding: 24px;
+      }
+      .card {
+        width: min(720px, 100%);
+        background: rgba(10, 17, 24, 0.96);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 28px;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+      }
+      .eyebrow {
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: var(--accent);
+        font-size: 12px;
+        margin-bottom: 12px;
+      }
+      h1 {
+        margin: 0 0 10px;
+        font-size: clamp(2rem, 4vw, 3rem);
+      }
+      p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+      .status {
+        margin-top: 18px;
+        padding: 12px 14px;
+        border: 1px solid rgba(126, 179, 255, 0.12);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        color: #9bf7be;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <div class="eyebrow">Backend</div>
+      <h1>App is running</h1>
+      <p>The API server is online and ready to accept requests from the frontend.</p>
+      <div class="status">GET /health is available for health checks.</div>
+    </main>
+  </body>
+</html>`);
+});
+
 app.get('/health', (_req, res) => {
   res.json({ ok: true });
 });

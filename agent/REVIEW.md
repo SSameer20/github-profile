@@ -46,3 +46,7 @@
 - Kept the ASCII avatar metadata in the generated output so the renderer can preserve left-column placement and block sizing.
 - Updated the formatter to a boxed two-column layout and clamped the ASCII block to a smaller 2:3 ratio so it fits the README more like the reference card.
 - Tightened the layout further to a compact 18x12 ASCII block and removed extra markdown summary noise from the saved output.
+
+## Backend Root
+
+- Added a `/` route in `backend/src/server.ts` that renders a small status page confirming the API server is running.
