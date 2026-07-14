@@ -39,3 +39,10 @@
 - Added backend logs for repository lookup, repository creation, README lookup, and commit success/failure, plus frontend session-log traces for commit requests.
 - Added an explicit repo-scope check so stale OAuth tokens fail with a reconnect message instead of a generic GitHub 404.
 - Added a reconnect action in the connected UI so users can reauthorize with the new scope when the server logs show `read:user,user:email` only.
+
+## Profile Layout
+
+- Reworked the generated README content into a terminal-dashboard format with explicit layout metadata, fixed columns, compact aligned rows, and terminal separators.
+- Kept the ASCII avatar metadata in the generated output so the renderer can preserve left-column placement and block sizing.
+- Updated the formatter to a boxed two-column layout and clamped the ASCII block to a smaller 2:3 ratio so it fits the README more like the reference card.
+- Tightened the layout further to a compact 18x12 ASCII block and removed extra markdown summary noise from the saved output.
