@@ -43,6 +43,29 @@ app.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
 
+function selectPortraitRamp(targetColumns: number) {
+  if (targetColumns <= 40) {
+    return "   .:-=+*#@";
+  }
+
+  if (targetColumns <= 56) {
+    return "      ..::--==++**##@@";
+  }
+
+  return "    ..::--==++**##%%@@";
+}
+
+function bayerThreshold(x: number, y: number) {
+  const matrix = [
+    [0, 8, 2, 10],
+    [12, 4, 14, 6],
+    [3, 11, 1, 9],
+    [15, 7, 13, 5],
+  ];
+
+  return matrix[y % 4][x % 4] / 16;
+}
+
 app.post("/ascii", async (req, res) => {
   const imageDataUrl = String(req.body?.imageDataUrl ?? "");
 
@@ -62,9 +85,13 @@ app.post("/ascii", async (req, res) => {
   const targetColumns = 52;
   const targetRows = 25;
   const compensationRows = targetRows * 2;
-  const ramp = "   ..::--==++**##@@";
+  const ramp = selectPortraitRamp(targetColumns);
+  const useDither = false;
 
   const { data, info } = await sharp(buffer)
+    .modulate({ brightness: 1.05, saturation: 0.85 })
+    .normalise()
+    .median(1)
     .resize({
       width: targetColumns,
       height: compensationRows,
@@ -73,27 +100,51 @@ app.post("/ascii", async (req, res) => {
       background: { r: 0, g: 0, b: 0, alpha: 1 },
       withoutEnlargement: false,
     })
-    .median(1)
     .blur(0.7)
     .grayscale()
     .normalize()
     .linear(0.82, -8)
+    .sharpen()
     .raw()
     .toBuffer({ resolveWithObject: true });
 
   const lines: string[] = [];
-
   for (let y = 0; y < targetRows; y++) {
     let row = "";
     for (let x = 0; x < targetColumns; x++) {
-      const samples = [
-        data[(y * 2) * info.width + x] ?? 0,
-        data[(y * 2 + 1) * info.width + x] ?? 0,
-      ];
-      const left = x > 0 ? data[(y * 2) * info.width + x - 1] ?? samples[0] : samples[0];
-      const right = x + 1 < info.width ? data[(y * 2) * info.width + x + 1] ?? samples[0] : samples[0];
-      const value = Math.round((samples[0] + samples[1] + left + right) / 4);
-      const quantized = Math.round((value / 255) * (ramp.length - 1));
+      const sampleX = x;
+      const sampleY = y * 2;
+      const neighborhood: number[] = [];
+
+      for (let dy = -1; dy <= 1; dy++) {
+        const rowIndex = Math.min(info.height - 1, Math.max(0, sampleY + dy));
+        for (let dx = -1; dx <= 1; dx++) {
+          const colIndex = Math.min(info.width - 1, Math.max(0, sampleX + dx));
+          neighborhood.push(data[rowIndex * info.width + colIndex] ?? 0);
+        }
+      }
+
+      const center = neighborhood[4] ?? 0;
+      const localMean = neighborhood.reduce((sum, value) => sum + value, 0) / neighborhood.length;
+      const horizontalEdge = Math.abs((neighborhood[3] ?? center) - (neighborhood[5] ?? center));
+      const verticalEdge = Math.abs((neighborhood[1] ?? center) - (neighborhood[7] ?? center));
+      const diagonalEdge = Math.abs((neighborhood[0] ?? center) - (neighborhood[8] ?? center));
+      const edgeBoost = Math.min(48, horizontalEdge * 0.45 + verticalEdge * 0.8 + diagonalEdge * 0.25);
+      const subjectX = (x - targetColumns / 2) / (targetColumns / 2);
+      const subjectY = (y - targetRows / 2) / (targetRows / 2);
+      const focus = Math.max(0, 1 - (subjectX * subjectX * 0.85 + subjectY * subjectY * 1.25));
+      const localContrast = Math.max(0, localMean - 8);
+      const subjectLift = focus * 42;
+      const bgSuppression = (1 - focus) * 42;
+      const value = Math.max(
+        0,
+        Math.min(
+          255,
+          Math.round(localContrast + edgeBoost + subjectLift - bgSuppression - 18),
+        ),
+      );
+      const dither = useDither ? bayerThreshold(x, y) : 0;
+      const quantized = Math.round(((value / 255) + dither * 0.06) * (ramp.length - 1));
       const char =
         ramp[
           Math.min(
