@@ -73,51 +73,51 @@ function previewUptime(createdAt?: string | null) {
 
 function buildReadmeContent(profile: ProfileForm, github: GithubSummary | null) {
   const languages = github?.languages.length ? github.languages : ['TypeScript', 'JavaScript', 'Python'];
-  const metadata = [
-    `layout: terminal-dashboard`,
-    `columns: 2`,
-    `ascii_position: left`,
-    `left_width: 24`,
-    `right_width: 30`,
-    `section_order: profile > contact > github stats`,
-    `spacing: compact`,
-    `ascii_ratio: 2:3`,
-    `ascii_width: 18`,
-    `ascii_height: 12`
-  ];
-
-  const compactRow = (label: string, value: string, width = 30) => `${label.padEnd(12, '.')} ${value}`.slice(0, width);
+  const leftWidth = 52;
+  const rightWidth = 53;
+  const borderTop = `┌${'─'.repeat(leftWidth)}┬${'─'.repeat(rightWidth)}┐`;
+  const borderBottom = `└${'─'.repeat(leftWidth)}┴${'─'.repeat(rightWidth)}┘`;
+  const padCell = (value: string, width: number) => value.slice(0, width).padEnd(width, ' ');
+  const compactRow = (label: string, value: string, width = rightWidth) => `${label.padEnd(12, '.')} ${value}`.slice(0, width);
   const asciiLines = compactAscii(profile.asciiAvatar);
+  const rightRows = [
+    compactRow('Profile', profile.identifier),
+    compactRow('Role', profile.classification),
+    compactRow('Host', github?.company || 'GitHub-connected machine'),
+    compactRow('Kernel', profile.coreKernel),
+    compactRow('IDE', 'VSCode 1.96.0'),
+    compactRow('Email', github?.company ? `${profile.identifier.toLowerCase().replace(/\s+/g, '.')}@${github.company.replace(/\s+/g, '').toLowerCase()}.com` : 'sameer@example.com'),
+    compactRow('Website', github?.blog || 'sameer.dev'),
+    compactRow('LinkedIn', 'linkedin.com/in/sameer'),
+    compactRow('Repos', String(github?.publicRepos ?? 0)),
+    compactRow('Followers', String(github?.followers ?? 0)),
+    compactRow('Following', String(github?.following ?? 0)),
+    compactRow('Gists', String(github?.publicGists ?? 0)),
+    compactRow('Langs', languages.join(', ')),
+    compactRow('Uptime', previewUptime(github?.createdAt)),
+    compactRow('Bio', github?.location ? `${profile.profileAbstract} Based in ${github.location}.` : profile.profileAbstract),
+    compactRow('Session', 'Connected'),
+    compactRow('Source', profile.gitPointer),
+    compactRow('Layout', 'terminal-dashboard'),
+    compactRow('Columns', '2'),
+    compactRow('Avatar', 'left'),
+    compactRow('Sizing', 'fixed 25 rows'),
+    compactRow('Stretch', 'disabled'),
+    compactRow('Padding', 'centered contain'),
+  ];
 
   return [
     `# ${profile.identifier}`,
     '',
     '```terminal',
-    'layout:',
-    ...metadata.map((line) => `  ${line}`),
-    '',
-    '┌──────────────┬──────────────────────────────┐',
-    '│ ASCII        │ Profile                      │',
-    '├──────────────┼──────────────────────────────┤',
-    ...asciiLines.map((line, index) => {
-      const right = index === 0 ? compactRow('Profile', profile.identifier) :
-        index === 1 ? compactRow('Role', profile.classification) :
-        index === 2 ? compactRow('Host', github?.company || 'GitHub-connected machine') :
-        index === 3 ? compactRow('Kernel', profile.coreKernel) :
-        index === 4 ? compactRow('IDE', 'VSCode 1.96.0') :
-        index === 5 ? '──────── Contact ────────'.padEnd(30, ' ') :
-        index === 6 ? compactRow('Email', github?.company ? `${profile.identifier.toLowerCase().replace(/\s+/g, '.')}@${github.company.replace(/\s+/g, '').toLowerCase()}.com` : 'sameer@example.com') :
-        index === 7 ? compactRow('Website', github?.blog || 'sameer.dev') :
-        index === 8 ? compactRow('LinkedIn', 'linkedin.com/in/sameer') :
-        index === 9 ? '──── GitHub Stats ────'.padEnd(30, ' ') :
-        index === 10 ? compactRow('Repos', String(github?.publicRepos ?? 0)) :
-        index === 11 ? compactRow('Followers', String(github?.followers ?? 0)) :
-        compactRow('Following', String(github?.following ?? 0));
-      return `│ ${line} │ ${right.padEnd(30, ' ')} │`;
+    borderTop,
+    ...Array.from({ length: 23 }, (_, index) => {
+      const left = padCell(asciiLines[index] ?? '', leftWidth);
+      const right = padCell(rightRows[index] ?? '', rightWidth);
+      return `│ ${left}│ ${right}│`;
     }),
-    '└──────────────┴──────────────────────────────┘',
-    '',
-    `ASCII block: 18x12 | ${metadata.join(' | ')}`
+    borderBottom,
+    '```'
   ].join('\n');
 }
 
@@ -128,15 +128,14 @@ function asciiPreview(source: string) {
 function compactAscii(source: string) {
   const lines = asciiPreview(source)
     .split('\n')
-    .map((line) => line.replace(/\s+$/, '').slice(0, 18))
-    .filter((line) => line.length > 0)
-    .slice(0, 12);
+    .map((line) => line.replace(/\s+$/, '').slice(0, 52))
+    .slice(0, 25);
 
-  while (lines.length < 12) {
+  while (lines.length < 25) {
     lines.push('');
   }
 
-  return lines.map((line) => line.padEnd(18, ' '));
+  return lines.map((line) => line.padEnd(52, ' '));
 }
 
 async function fetchAsciiFromImage(file: File) {
@@ -586,7 +585,7 @@ export default function Page() {
 
             <div className="card-grid">
               <div className="portrait-block">
-                <div className="ascii-box portrait">{asciiPreview(profile.asciiAvatar)}</div>
+                <pre className="ascii-box portrait">{asciiPreview(profile.asciiAvatar)}</pre>
               </div>
 
               <div className="card-body">

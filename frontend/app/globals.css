@@ -264,24 +264,21 @@ main {
   overflow: hidden;
   background: #02060a;
   min-height: 100%;
-  display: grid;
-  place-items: center;
+  display: block;
   font-family: var(--font-mono);
   white-space: pre;
-  font-size: 6px;
-  line-height: 0.95;
+  font-size: 11px;
+  line-height: 1;
   color: #9bf7be;
-  padding: 14px 8px;
+  padding: 12px;
 }
 
 .ascii-box.portrait {
-  min-height: 520px;
-  white-space: pre-wrap;
-  word-break: break-word;
-  align-content: start;
-  justify-items: start;
-  font-size: 7px;
-  line-height: 0.92;
+  width: 100%;
+  aspect-ratio: 52 / 25;
+  white-space: pre;
+  overflow: hidden;
+  display: block;
 }
 
 .terminal-name {
@@ -312,7 +309,7 @@ main {
 
 .card-grid {
   display: grid;
-  grid-template-columns: minmax(320px, 0.9fr) 1.3fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
   align-items: start;
 }

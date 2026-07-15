@@ -59,28 +59,46 @@ app.post("/ascii", async (req, res) => {
   }
 
   const buffer = Buffer.from(base64, "base64");
-  const width = 84;
-  const ramp = " .,:;irsXA253hMHGS#9B&@";
+  const targetColumns = 52;
+  const targetRows = 25;
+  const compensationRows = targetRows * 2;
+  const ramp = "   ..::--==++**##@@";
 
   const { data, info } = await sharp(buffer)
-    .resize({ width, withoutEnlargement: true })
+    .resize({
+      width: targetColumns,
+      height: compensationRows,
+      fit: "contain",
+      position: "centre",
+      background: { r: 0, g: 0, b: 0, alpha: 1 },
+      withoutEnlargement: false,
+    })
+    .median(1)
+    .blur(0.7)
     .grayscale()
     .normalize()
+    .linear(0.82, -8)
     .raw()
     .toBuffer({ resolveWithObject: true });
 
-  const height = info.height;
   const lines: string[] = [];
 
-  for (let y = 0; y < height; y++) {
+  for (let y = 0; y < targetRows; y++) {
     let row = "";
-    for (let x = 0; x < info.width; x++) {
-      const value = data[y * info.width + x];
+    for (let x = 0; x < targetColumns; x++) {
+      const samples = [
+        data[(y * 2) * info.width + x] ?? 0,
+        data[(y * 2 + 1) * info.width + x] ?? 0,
+      ];
+      const left = x > 0 ? data[(y * 2) * info.width + x - 1] ?? samples[0] : samples[0];
+      const right = x + 1 < info.width ? data[(y * 2) * info.width + x + 1] ?? samples[0] : samples[0];
+      const value = Math.round((samples[0] + samples[1] + left + right) / 4);
+      const quantized = Math.round((value / 255) * (ramp.length - 1));
       const char =
         ramp[
           Math.min(
             ramp.length - 1,
-            Math.floor((value / 255) * (ramp.length - 1)),
+            Math.max(0, quantized),
           )
         ];
       row += char;
@@ -88,7 +106,7 @@ app.post("/ascii", async (req, res) => {
     lines.push(row);
   }
 
-  res.json({ ascii: lines.join("\n") });
+  res.json({ ascii: lines.join("\n"), width: targetColumns, height: targetRows });
 });
 
 app.get("/auth/github/start", (_req, res) => {
